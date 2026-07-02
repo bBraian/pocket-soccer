@@ -37,6 +37,19 @@ export function MatchScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Best-effort landscape lock (only works when installed / fullscreen; a plain
+  // browser tab just ignores it).
+  useEffect(() => {
+    const o = window.screen?.orientation as
+      | (ScreenOrientation & {
+          lock?: (o: string) => Promise<void>;
+          unlock?: () => void;
+        })
+      | undefined;
+    o?.lock?.('landscape').catch(() => {});
+    return () => o?.unlock?.();
+  }, []);
+
   if (!config) return null;
 
   return (
