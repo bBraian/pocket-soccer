@@ -42,13 +42,15 @@ export function drawField(ctx: CanvasRenderingContext2D, grass: GrassSkin): void
   ctx.strokeStyle = p.line;
   ctx.lineWidth = 3;
 
-  // Outer boundary.
-  ctx.strokeRect(6, 6, FIELD_W - 12, FIELD_H - 12);
+  // Outer boundary — flush to the screen edge (inset = half the line width so
+  // the full stroke stays visible right against the border).
+  const edge = ctx.lineWidth / 2;
+  ctx.strokeRect(edge, edge, FIELD_W - ctx.lineWidth, FIELD_H - ctx.lineWidth);
 
   // Halfway line + center circle.
   ctx.beginPath();
-  ctx.moveTo(FIELD_W / 2, 6);
-  ctx.lineTo(FIELD_W / 2, FIELD_H - 6);
+  ctx.moveTo(FIELD_W / 2, edge);
+  ctx.lineTo(FIELD_W / 2, FIELD_H - edge);
   ctx.stroke();
   ctx.beginPath();
   ctx.arc(FIELD_W / 2, FIELD_H / 2, 70, 0, Math.PI * 2);
@@ -60,8 +62,8 @@ export function drawField(ctx: CanvasRenderingContext2D, grass: GrassSkin): void
 
   // Penalty box markings (rectangles drawn on the pitch, around each goal).
   const pbTop = (FIELD_H - PENALTY_H) / 2;
-  ctx.strokeRect(6, pbTop, PENALTY_W, PENALTY_H);
-  ctx.strokeRect(FIELD_W - 6 - PENALTY_W, pbTop, PENALTY_W, PENALTY_H);
+  ctx.strokeRect(edge, pbTop, PENALTY_W, PENALTY_H);
+  ctx.strokeRect(FIELD_W - edge - PENALTY_W, pbTop, PENALTY_W, PENALTY_H);
 
   drawGoalBacks(ctx);
 }
