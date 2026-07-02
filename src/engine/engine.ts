@@ -13,7 +13,6 @@ import {
   FIELD_H,
   FIELD_W,
   FIXED_DT,
-  INACTIVE_ALPHA,
   MATCH_TIME_MS,
   MAX_DRAG,
   SHOT_POWER,
@@ -22,8 +21,8 @@ import {
 import type { Ball, Body, Disc } from './entities';
 import { makeBall, makeDisc } from './entities';
 import { resolveFormation } from './formations';
-import { checkGoal, collide, collidePosts, integrate, walls } from './physics';
-import { drawBall, drawDisc, drawField, drawForceRing } from './render';
+import { checkGoal, collide, collideGoals, integrate, walls } from './physics';
+import { drawBall, drawDisc, drawField, drawForceRing, drawGoals } from './render';
 
 export type MatchPhase = 'aiming' | 'dragging' | 'celebrating' | 'ended';
 
@@ -66,6 +65,7 @@ export class GameEngine {
   private dragY = 0;
   private ringRotation = 0;
   private crestImages: Record<string, HTMLImageElement> = {};
+  private ballImage: HTMLImageElement | null = null;
 
   private lastNow = 0;
   private acc = 0;
@@ -256,9 +256,8 @@ export class GameEngine {
     while (this.acc >= FIXED_DT) {
       integrate(this.bodies, FIXED_DT);
       collide(this.discs, this.ball);
-      for (const d of this.discs) walls(d, false);
-      walls(this.ball, true);
-      collidePosts(this.bodies);
+      for (const b of this.bodies) walls(b);
+      collideGoals(this.bodies);
       const scorer = checkGoal(this.ball);
       if (scorer) {
         this.acc = 0;
@@ -311,18 +310,20 @@ export class GameEngine {
 
   // ---- render ----
   render(ctx: CanvasRenderingContext2D): void {
+    // Field + goal-box back layer.
     drawField(ctx, this.settings.grass);
+
+    // Discs + ball.
+    const settled = this.phase === 'celebrating' || this.phase === 'ended';
     for (const d of this.discs) {
       const team = d.side === 'home' ? this.cfg.homeTeam : this.cfg.awayTeam;
-      const active =
-        this.phase === 'celebrating' || this.phase === 'ended'
-          ? 1
-          : d.side === this.turn
-            ? 1
-            : INACTIVE_ALPHA;
-      drawDisc(ctx, d, team, active, this.crestImages[team.id]);
+      const dim = !settled && d.side !== this.turn;
+      drawDisc(ctx, d, team, dim, this.crestImages[team.id]);
     }
-    drawBall(ctx, this.ball, this.settings.ball);
+    drawBall(ctx, this.ball, this.ballImage);
+
+    // Goal net + frame on top, so discs/ball inside a goal appear behind the net.
+    drawGoals(ctx);
 
     if (this.phase === 'dragging' && this.grabbed) {
       const dx = this.dragX - this.grabbed.x;
@@ -338,6 +339,10 @@ export class GameEngine {
 
   setCrestImages(map: Record<string, HTMLImageElement>): void {
     this.crestImages = map;
+  }
+
+  setBallImage(img: HTMLImageElement | null): void {
+    this.ballImage = img;
   }
 }
 

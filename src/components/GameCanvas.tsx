@@ -3,6 +3,7 @@ import type { BallSkin, GrassSkin, MatchConfig, MatchResult } from '../types';
 import { FIELD_H, FIELD_W } from '../engine/constants';
 import { GameEngine } from '../engine/engine';
 import { flagUrl } from '../data/flags';
+import { ballUrl } from '../data/balls';
 import { useMatchStore } from '../store/matchStore';
 
 interface Props {
@@ -116,9 +117,20 @@ export function GameCanvas({ config, grass, ball, paused, onMatchEnd }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Live-update skins without recreating the engine.
+  // Live-update skins without recreating the engine. Also (re)loads the ball
+  // skin image — runs on mount and whenever the chosen skins change.
   useEffect(() => {
-    engineRef.current?.updateSettings({ grass, ball });
+    const engine = engineRef.current;
+    if (!engine) return;
+    engine.updateSettings({ grass, ball });
+    const url = ballUrl(ball);
+    if (url) {
+      const im = new Image();
+      im.src = url;
+      engine.setBallImage(im);
+    } else {
+      engine.setBallImage(null);
+    }
   }, [grass, ball]);
 
   return <canvas ref={canvasRef} className="game-canvas" />;

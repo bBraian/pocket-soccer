@@ -5,6 +5,7 @@ import {
   FIELD_H,
   FIELD_W,
   GOAL_BOTTOM,
+  GOAL_BOX_DEPTH,
   GOAL_TOP,
   LINEAR_DAMPING,
   POST_R,
@@ -84,10 +85,10 @@ export function collide(discs: Disc[], ball: Ball): void {
   }
 }
 
-// Bounce a body off the 4 walls. `allowGoal` (ball only) lets it pass through
-// the goal mouths so the caller can detect a score.
-export function walls(b: Body, allowGoal: boolean): void {
-  // Top / bottom walls.
+// Bounce a body off the 4 field edges. The left/right edges are the goal
+// backs (nets) and always block — the goal opening is guarded separately by
+// the goal-box rails and posts, so nothing leaves the pitch.
+export function walls(b: Body): void {
   if (b.y - b.r < 0) {
     b.y = b.r;
     b.vy = Math.abs(b.vy) * WALL_RESTITUTION;
@@ -95,43 +96,21 @@ export function walls(b: Body, allowGoal: boolean): void {
     b.y = FIELD_H - b.r;
     b.vy = -Math.abs(b.vy) * WALL_RESTITUTION;
   }
-
-  const inMouth = b.y > GOAL_TOP && b.y < GOAL_BOTTOM;
-  // Left / right walls.
   if (b.x - b.r < 0) {
-    if (!(allowGoal && inMouth)) {
-      b.x = b.r;
-      b.vx = Math.abs(b.vx) * WALL_RESTITUTION;
-    }
+    b.x = b.r;
+    b.vx = Math.abs(b.vx) * WALL_RESTITUTION;
   } else if (b.x + b.r > FIELD_W) {
-    if (!(allowGoal && inMouth)) {
-      b.x = FIELD_W - b.r;
-      b.vx = -Math.abs(b.vx) * WALL_RESTITUTION;
-    }
+    b.x = FIELD_W - b.r;
+    b.vx = -Math.abs(b.vx) * WALL_RESTITUTION;
   }
 }
 
-// Solid goal posts at the two ends of each goal mouth. A body hitting a post
-// is pushed out and bounces — so only shots through the front of the mouth
-// score; grazing the side of the goal is deflected.
-interface StaticCircle {
-  x: number;
-  y: number;
-  r: number;
-}
-
-export const GOAL_POSTS: StaticCircle[] = [
-  { x: 0, y: GOAL_TOP, r: POST_R },
-  { x: 0, y: GOAL_BOTTOM, r: POST_R },
-  { x: FIELD_W, y: GOAL_TOP, r: POST_R },
-  { x: FIELD_W, y: GOAL_BOTTOM, r: POST_R },
-];
-
-function collideStatic(b: Body, s: StaticCircle, rest: number): void {
-  const dx = b.x - s.x;
-  const dy = b.y - s.y;
+// Resolve a body against a solid point of radius `pr` (pr = 0 => a line point).
+function collidePoint(b: Body, px: number, py: number, pr: number, rest: number): void {
+  const dx = b.x - px;
+  const dy = b.y - py;
   let d = Math.hypot(dx, dy);
-  const minD = b.r + s.r;
+  const minD = b.r + pr;
   if (d >= minD) return;
   let nx: number;
   let ny: number;
@@ -143,8 +122,8 @@ function collideStatic(b: Body, s: StaticCircle, rest: number): void {
     nx = dx / d;
     ny = dy / d;
   }
-  b.x = s.x + nx * minD;
-  b.y = s.y + ny * minD;
+  b.x = px + nx * minD;
+  b.y = py + ny * minD;
   const vn = b.vx * nx + b.vy * ny;
   if (vn < 0) {
     b.vx -= (1 + rest) * vn * nx;
@@ -152,9 +131,41 @@ function collideStatic(b: Body, s: StaticCircle, rest: number): void {
   }
 }
 
-export function collidePosts(bodies: Body[]): void {
+// Circle vs. line segment — resolve against the nearest point on the segment.
+function collideSegment(
+  b: Body,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  rest: number,
+): void {
+  const abx = bx - ax;
+  const aby = by - ay;
+  const len2 = abx * abx + aby * aby;
+  let t = len2 ? ((b.x - ax) * abx + (b.y - ay) * aby) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  collidePoint(b, ax + abx * t, ay + aby * t, 0, rest);
+}
+
+// The two goal boxes. Each has: two side rails (top/bottom, running from the
+// end line to the front goal line) that block from inside and outside, and two
+// solid posts at the front opening. The back (end line) is handled by walls().
+const GOALS = [
+  { back: 0, front: GOAL_BOX_DEPTH }, // left goal
+  { back: FIELD_W, front: FIELD_W - GOAL_BOX_DEPTH }, // right goal
+];
+
+export function collideGoals(bodies: Body[]): void {
   for (const b of bodies) {
-    for (const s of GOAL_POSTS) collideStatic(b, s, WALL_RESTITUTION);
+    for (const g of GOALS) {
+      // Side rails.
+      collideSegment(b, g.back, GOAL_TOP, g.front, GOAL_TOP, WALL_RESTITUTION);
+      collideSegment(b, g.back, GOAL_BOTTOM, g.front, GOAL_BOTTOM, WALL_RESTITUTION);
+      // Front posts.
+      collidePoint(b, g.front, GOAL_TOP, POST_R, WALL_RESTITUTION);
+      collidePoint(b, g.front, GOAL_BOTTOM, POST_R, WALL_RESTITUTION);
+    }
   }
 }
 
@@ -163,8 +174,9 @@ export function collidePosts(bodies: Body[]): void {
 export function checkGoal(ball: Ball): Side | null {
   const inMouth = ball.y > GOAL_TOP && ball.y < GOAL_BOTTOM;
   if (!inMouth) return null;
-  if (ball.x + ball.r < 0) return 'away'; // ball in left goal -> away scores
-  if (ball.x - ball.r > FIELD_W) return 'home'; // right goal -> home scores
+  // Whole ball must cross the front goal line (inside the box), not the screen.
+  if (ball.x + ball.r < GOAL_BOX_DEPTH) return 'away'; // left goal -> away scores
+  if (ball.x - ball.r > FIELD_W - GOAL_BOX_DEPTH) return 'home'; // right goal
   return null;
 }
 

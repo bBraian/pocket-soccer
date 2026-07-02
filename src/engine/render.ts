@@ -1,16 +1,15 @@
-import type { BallSkin, GrassSkin, Team } from '../types';
+import type { GrassSkin, Team } from '../types';
 import {
   BALL_R,
   DISC_R,
   FIELD_H,
   FIELD_W,
   GOAL_BOTTOM,
-  GOAL_DEPTH,
+  GOAL_BOX_DEPTH,
   GOAL_TOP,
   MAX_DRAG,
   PENALTY_H,
   PENALTY_W,
-  POST_R,
 } from './constants';
 import type { Ball, Disc } from './entities';
 
@@ -59,49 +58,55 @@ export function drawField(ctx: CanvasRenderingContext2D, grass: GrassSkin): void
   ctx.fillStyle = p.line;
   ctx.fill();
 
-  // Penalty boxes — rectangles drawn on the pitch at each end.
+  // Penalty box markings (rectangles drawn on the pitch, around each goal).
   const pbTop = (FIELD_H - PENALTY_H) / 2;
   ctx.strokeRect(6, pbTop, PENALTY_W, PENALTY_H);
   ctx.strokeRect(FIELD_W - 6 - PENALTY_W, pbTop, PENALTY_W, PENALTY_H);
 
-  // Smaller goal areas (six-yard boxes).
-  const gaH = GOAL_BOTTOM - GOAL_TOP + 40;
-  const gaTop = (FIELD_H - gaH) / 2;
-  const gaW = 62;
-  ctx.strokeRect(6, gaTop, gaW, gaH);
-  ctx.strokeRect(FIELD_W - 6 - gaW, gaTop, gaW, gaH);
-
-  drawGoals(ctx, p.line);
+  drawGoalBacks(ctx);
 }
 
-function drawGoals(ctx: CanvasRenderingContext2D, line: string): void {
-  ctx.strokeStyle = line;
-  ctx.lineWidth = 2;
-  // Left net.
-  drawNet(ctx, -GOAL_DEPTH, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
-  // Right net.
-  drawNet(ctx, FIELD_W, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
-  drawPosts(ctx);
-}
-
-// Solid posts at the mouth corners — the ball bounces off these.
-function drawPosts(ctx: CanvasRenderingContext2D): void {
-  const posts: Array<[number, number]> = [
-    [0, GOAL_TOP],
-    [0, GOAL_BOTTOM],
-    [FIELD_W, GOAL_TOP],
-    [FIELD_W, GOAL_BOTTOM],
-  ];
-  for (const [x, y] of posts) {
-    ctx.beginPath();
-    ctx.arc(x, y, POST_R, 0, Math.PI * 2);
-    ctx.fillStyle = '#f4f4f4';
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.stroke();
+// Back layer of the goal boxes — the darkened interior, drawn BEFORE the discs
+// so a disc/ball driving into the goal sits on top of it.
+function drawGoalBacks(ctx: CanvasRenderingContext2D): void {
+  for (const [back, front] of GOAL_BOXES) {
+    const x0 = Math.min(back, front);
+    const w = Math.abs(front - back);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x0, GOAL_TOP, w, GOAL_BOTTOM - GOAL_TOP);
+    ctx.restore();
   }
 }
+
+// Front layer — net mesh + white frame, drawn AFTER the discs/ball so they
+// appear inside the net (mesh over them). No solid posts are drawn.
+export function drawGoals(ctx: CanvasRenderingContext2D): void {
+  for (const [back, front] of GOAL_BOXES) {
+    const x0 = Math.min(back, front);
+    const w = Math.abs(front - back);
+    drawNet(ctx, x0, GOAL_TOP, w, GOAL_BOTTOM - GOAL_TOP);
+
+    ctx.save();
+    ctx.strokeStyle = '#f2f2f2';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(front, GOAL_TOP);
+    ctx.lineTo(back, GOAL_TOP);
+    ctx.moveTo(front, GOAL_BOTTOM);
+    ctx.lineTo(back, GOAL_BOTTOM);
+    ctx.moveTo(back, GOAL_TOP);
+    ctx.lineTo(back, GOAL_BOTTOM);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+const GOAL_BOXES: Array<[number, number]> = [
+  [0, GOAL_BOX_DEPTH],
+  [FIELD_W, FIELD_W - GOAL_BOX_DEPTH],
+];
 
 function drawNet(
   ctx: CanvasRenderingContext2D,
@@ -131,16 +136,17 @@ function drawNet(
 
 // Button-style disc: shows the team crest inside — the real flag (nations, via
 // a preloaded image) or a generated two-tone badge with initials (clubs).
+// When `dim` (not this team's turn) the disc stays fully opaque but its texture
+// is darkened, so the pitch never shows through it.
 export function drawDisc(
   ctx: CanvasRenderingContext2D,
   disc: Disc,
   team: Team,
-  alpha: number,
+  dim: boolean,
   crest?: HTMLImageElement | null,
 ): void {
   const R = DISC_R;
   ctx.save();
-  ctx.globalAlpha = alpha;
 
   // Drop shadow.
   ctx.beginPath();
@@ -200,6 +206,12 @@ export function drawDisc(
     ctx.fillStyle = '#fff';
     ctx.fillText(initials, disc.x, disc.y + 1);
   }
+
+  // Darken (not fade) when it is not this team's turn.
+  if (dim) {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(disc.x - R, disc.y - R, R * 2, R * 2);
+  }
   ctx.restore(); // unclip
 
   // Rim.
@@ -215,89 +227,29 @@ export function drawDisc(
 export function drawBall(
   ctx: CanvasRenderingContext2D,
   ball: Ball,
-  skin: BallSkin,
+  img?: HTMLImageElement | null,
 ): void {
+  const R = BALL_R;
   ctx.save();
   // Shadow.
   ctx.beginPath();
-  ctx.arc(ball.x, ball.y + 2, BALL_R, 0, Math.PI * 2);
+  ctx.arc(ball.x, ball.y + 2, R, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.fill();
 
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(ball.x, ball.y, BALL_R, 0, Math.PI * 2);
-  ctx.clip();
-
-  if (skin === 'retro') {
-    ctx.fillStyle = '#e8842a';
+  if (img && img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, ball.x - R, ball.y - R, R * 2, R * 2);
   } else {
+    // Fallback plain ball while the skin image loads.
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, R, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
-  }
-  ctx.fillRect(ball.x - BALL_R, ball.y - BALL_R, BALL_R * 2, BALL_R * 2);
-
-  ctx.fillStyle = '#1a1a1a';
-  if (skin === 'classic') {
-    // Central pentagon + surrounding dabs.
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, BALL_R * 0.42, 0, Math.PI * 2);
     ctx.fill();
-    for (let i = 0; i < 5; i++) {
-      const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
-      ctx.beginPath();
-      ctx.arc(
-        ball.x + Math.cos(a) * BALL_R * 0.85,
-        ball.y + Math.sin(a) * BALL_R * 0.85,
-        BALL_R * 0.18,
-        0,
-        Math.PI * 2,
-      );
-      ctx.fill();
-    }
-  } else if (skin === 'striped') {
-    ctx.fillStyle = '#c62828';
-    ctx.fillRect(ball.x - BALL_R, ball.y - 5, BALL_R * 2, 3);
-    ctx.fillRect(ball.x - BALL_R, ball.y + 2, BALL_R * 2, 3);
-  } else if (skin === 'star') {
-    ctx.fillStyle = '#1565c0';
-    star(ctx, ball.x, ball.y, 5, BALL_R * 0.85, BALL_R * 0.38);
-  } else if (skin === 'retro') {
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, BALL_R * 0.55, 0, Math.PI * 2);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
     ctx.stroke();
   }
   ctx.restore();
-
-  // Rim + gloss.
-  ctx.beginPath();
-  ctx.arc(ball.x, ball.y, BALL_R, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.restore();
-}
-
-function star(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  points: number,
-  outer: number,
-  inner: number,
-): void {
-  ctx.beginPath();
-  for (let i = 0; i < points * 2; i++) {
-    const r = i % 2 === 0 ? outer : inner;
-    const a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
-    const x = cx + Math.cos(a) * r;
-    const y = cy + Math.sin(a) * r;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.fill();
 }
 
 // Circular force indicator around the pressed disc: rotating arcs whose color
