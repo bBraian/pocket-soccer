@@ -94,6 +94,10 @@ export function BracketScreen() {
       items: ms.slice(ms.length / 2),
     });
   }
+  // Fixed column height = tallest column (first round) so space-around can
+  // spread later rounds to their midpoints, giving the classic converging tree.
+  const tallest = columns.reduce((m, c) => Math.max(m, c.items.length), 1);
+  const colMinHeight = tallest * 76;
 
   const playNext = () => {
     if (!current || !current.homeId || !current.awayId) return;
@@ -155,9 +159,15 @@ export function BracketScreen() {
         {columns.map((col) => (
           <div className="bround" key={col.key}>
             <h4>{col.label}</h4>
-            <div className="bround-body">
+            <div className="bround-body" style={{ minHeight: colMinHeight }}>
               {col.items.map((m) => (
-                <MatchBox key={m.id} m={m} userId={userTeamId} />
+                // Each match sits in an equal-height cell; a round with half the
+                // matches gets cells twice as tall, so its match centers exactly
+                // between the two it feeds from.
+                <div className="bcell" key={m.id}>
+                  {col.key === 'F' && <div className="final-trophy">🏆</div>}
+                  <MatchBox m={m} userId={userTeamId} />
+                </div>
               ))}
             </div>
           </div>

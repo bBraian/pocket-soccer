@@ -690,7 +690,7 @@ button {
   flex: 1;
   min-height: 0;
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 14px;
   overflow: auto;
   padding-bottom: 10px;
@@ -704,14 +704,26 @@ button {
 .bround h4 {
   text-align: center;
 }
-/* Matches centered within the column so later rounds converge toward the
-   final; `safe` keeps the top reachable when a column overflows. */
+/* Fixed column height (set inline from the first round). Each match lives in an
+   equal-height cell; a round with half the matches gets cells twice as tall, so
+   its match centers exactly between the two feeding it — the converging tree. */
 .bround-body {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: safe center;
-  gap: 10px;
+}
+.bcell {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+}
+.final-trophy {
+  font-size: 42px;
+  text-align: center;
+  line-height: 1;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
 }
 .bmatch {
   flex: none;
