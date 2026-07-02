@@ -4,6 +4,7 @@ import { ROUND_NAMES } from '../tournament/bracket';
 import { useNavStore } from '../store/navStore';
 import { useTournamentStore } from '../store/tournamentStore';
 import { TeamCrest } from '../components/TeamCrest';
+import trophyImg from '../assets/word-cup.png';
 
 function Slot({
   teamId,
@@ -120,11 +121,14 @@ export function BracketScreen() {
 
       {champion ? (
         <div className="champion-banner">
-          <div className="champion-crest">
-            <TeamCrest team={champion} size={90} />
+          <img src={trophyImg} className="trophy-img lg" alt="Taça" />
+          <div className="champion-info">
+            <TeamCrest team={champion} size={40} />
+            <div className="champion-text">
+              <h3>Campeão</h3>
+              <p className="champion-name">{champion.name}</p>
+            </div>
           </div>
-          <h3>🏆 Campeão</h3>
-          <p className="champion-name">{champion.name}</p>
           <button
             className="menu-btn primary"
             onClick={() => {
@@ -165,7 +169,9 @@ export function BracketScreen() {
                 // matches gets cells twice as tall, so its match centers exactly
                 // between the two it feeds from.
                 <div className="bcell" key={m.id}>
-                  {col.key === 'F' && <div className="final-trophy">🏆</div>}
+                  {col.key === 'F' && (
+                    <img src={trophyImg} className="trophy-img sm final-trophy" alt="" />
+                  )}
                   <MatchBox m={m} userId={userTeamId} />
                 </div>
               ))}

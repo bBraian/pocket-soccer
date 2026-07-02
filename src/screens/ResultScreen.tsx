@@ -3,6 +3,7 @@ import { useNavStore } from '../store/navStore';
 import { useMatchStore } from '../store/matchStore';
 import { useTournamentStore } from '../store/tournamentStore';
 import { TeamCrest } from '../components/TeamCrest';
+import trophyImg from '../assets/word-cup.png';
 
 export function ResultScreen() {
   const go = useNavStore((s) => s.go);
@@ -53,7 +54,8 @@ export function ResultScreen() {
         </div>
 
         <p className="result-winner">
-          🏆 {winnerTeam.name} venceu
+          <img src={trophyImg} className="trophy-img inline" alt="" />
+          {winnerTeam.name} venceu
         </p>
 
         {fromTournament ? (

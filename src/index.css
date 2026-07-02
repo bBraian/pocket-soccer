@@ -44,7 +44,7 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 16px max(16px, env(safe-area-inset-right))
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
     max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   max-width: 760px;
   width: 100%;
@@ -690,19 +690,66 @@ button {
   align-items: center;
   gap: 14px;
 }
+/* Compact horizontal banner so the bracket table stays visible below it. */
 .champion-banner {
-  text-align: center;
-  background: linear-gradient(180deg, #2a3a1c, var(--panel));
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(90deg, #2a3a1c, var(--panel));
   border: 1px solid var(--accent);
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 16px;
+  border-radius: 14px;
+  padding: 8px 14px;
+  margin-bottom: 12px;
+}
+.champion-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.champion-text {
+  min-width: 0;
+}
+.champion-text h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 .champion-name {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--accent);
-  margin: 4px 0 14px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.champion-banner .menu-btn {
+  width: auto;
+  flex: none;
+  padding: 10px 22px;
+}
+.trophy-img {
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+}
+.trophy-img.lg {
+  height: 52px;
+  flex: none;
+}
+.trophy-img.sm {
+  height: 30px;
+}
+.trophy-img.inline {
+  display: inline-block;
+  height: 18px;
+  vertical-align: -3px;
+  margin-right: 4px;
 }
 .bracket {
   overflow: hidden;
@@ -741,10 +788,7 @@ button {
   gap: 6px;
 }
 .final-trophy {
-  font-size: 42px;
-  text-align: center;
-  line-height: 1;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+  margin: 0 auto 6px;
 }
 .bmatch {
   flex: none;
