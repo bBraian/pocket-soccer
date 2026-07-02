@@ -7,6 +7,7 @@ import {
   GOAL_BOTTOM,
   GOAL_TOP,
   LINEAR_DAMPING,
+  POST_R,
   STOP_SPEED,
   WALL_RESTITUTION,
 } from './constants';
@@ -107,6 +108,53 @@ export function walls(b: Body, allowGoal: boolean): void {
       b.x = FIELD_W - b.r;
       b.vx = -Math.abs(b.vx) * WALL_RESTITUTION;
     }
+  }
+}
+
+// Solid goal posts at the two ends of each goal mouth. A body hitting a post
+// is pushed out and bounces — so only shots through the front of the mouth
+// score; grazing the side of the goal is deflected.
+interface StaticCircle {
+  x: number;
+  y: number;
+  r: number;
+}
+
+export const GOAL_POSTS: StaticCircle[] = [
+  { x: 0, y: GOAL_TOP, r: POST_R },
+  { x: 0, y: GOAL_BOTTOM, r: POST_R },
+  { x: FIELD_W, y: GOAL_TOP, r: POST_R },
+  { x: FIELD_W, y: GOAL_BOTTOM, r: POST_R },
+];
+
+function collideStatic(b: Body, s: StaticCircle, rest: number): void {
+  const dx = b.x - s.x;
+  const dy = b.y - s.y;
+  let d = Math.hypot(dx, dy);
+  const minD = b.r + s.r;
+  if (d >= minD) return;
+  let nx: number;
+  let ny: number;
+  if (d === 0) {
+    nx = 1;
+    ny = 0;
+    d = 0.01;
+  } else {
+    nx = dx / d;
+    ny = dy / d;
+  }
+  b.x = s.x + nx * minD;
+  b.y = s.y + ny * minD;
+  const vn = b.vx * nx + b.vy * ny;
+  if (vn < 0) {
+    b.vx -= (1 + rest) * vn * nx;
+    b.vy -= (1 + rest) * vn * ny;
+  }
+}
+
+export function collidePosts(bodies: Body[]): void {
+  for (const b of bodies) {
+    for (const s of GOAL_POSTS) collideStatic(b, s, WALL_RESTITUTION);
   }
 }
 

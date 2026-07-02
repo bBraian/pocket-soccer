@@ -4,7 +4,7 @@
 export const FIELD_W = 900;
 export const FIELD_H = 560;
 
-export const DISC_R = 27;
+export const DISC_R = 31;
 export const BALL_R = 13;
 
 // Goal mouth (opening in the left/right walls), vertically centered.
@@ -12,6 +12,11 @@ export const GOAL_H = 180;
 export const GOAL_TOP = (FIELD_H - GOAL_H) / 2;
 export const GOAL_BOTTOM = GOAL_TOP + GOAL_H;
 export const GOAL_DEPTH = 26; // visual net depth outside the wall
+export const POST_R = 9; // goal post radius (solid — ball bounces off it)
+
+// Penalty box markings (rectangle drawn on the pitch, no collision).
+export const PENALTY_W = 150; // depth into the field
+export const PENALTY_H = 300; // height, centered on the goal
 
 // Physics — velocities are in px/second.
 export const FIXED_DT = 1 / 120; // fixed physics step

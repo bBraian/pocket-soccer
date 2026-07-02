@@ -22,7 +22,7 @@ import {
 import type { Ball, Body, Disc } from './entities';
 import { makeBall, makeDisc } from './entities';
 import { resolveFormation } from './formations';
-import { checkGoal, collide, integrate, walls } from './physics';
+import { checkGoal, collide, collidePosts, integrate, walls } from './physics';
 import { drawBall, drawDisc, drawField, drawForceRing } from './render';
 
 export type MatchPhase = 'aiming' | 'dragging' | 'celebrating' | 'ended';
@@ -65,6 +65,7 @@ export class GameEngine {
   private dragX = 0;
   private dragY = 0;
   private ringRotation = 0;
+  private crestImages: Record<string, HTMLImageElement> = {};
 
   private lastNow = 0;
   private acc = 0;
@@ -257,6 +258,7 @@ export class GameEngine {
       collide(this.discs, this.ball);
       for (const d of this.discs) walls(d, false);
       walls(this.ball, true);
+      collidePosts(this.bodies);
       const scorer = checkGoal(this.ball);
       if (scorer) {
         this.acc = 0;
@@ -318,7 +320,7 @@ export class GameEngine {
           : d.side === this.turn
             ? 1
             : INACTIVE_ALPHA;
-      drawDisc(ctx, d, team, active);
+      drawDisc(ctx, d, team, active, this.crestImages[team.id]);
     }
     drawBall(ctx, this.ball, this.settings.ball);
 
@@ -332,6 +334,10 @@ export class GameEngine {
 
   updateSettings(s: EngineSettings): void {
     this.settings = s;
+  }
+
+  setCrestImages(map: Record<string, HTMLImageElement>): void {
+    this.crestImages = map;
   }
 }
 

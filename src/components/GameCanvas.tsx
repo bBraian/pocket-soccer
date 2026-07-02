@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { BallSkin, GrassSkin, MatchConfig, MatchResult } from '../types';
 import { FIELD_H, FIELD_W } from '../engine/constants';
 import { GameEngine } from '../engine/engine';
+import { flagUrl } from '../data/flags';
 import { useMatchStore } from '../store/matchStore';
 
 interface Props {
@@ -54,6 +55,21 @@ export function GameCanvas({ config, grass, ball, paused, onMatchEnd }: Props) {
       },
     );
     engineRef.current = engine;
+
+    // Preload national flag crests to draw inside the discs.
+    const crests: Record<string, HTMLImageElement> = {};
+    for (const t of [config.homeTeam, config.awayTeam]) {
+      if (t.type === 'nation' && t.flagCode) {
+        const url = flagUrl(t.flagCode);
+        if (url) {
+          const im = new Image();
+          im.src = url;
+          crests[t.id] = im;
+        }
+      }
+    }
+    engine.setCrestImages(crests);
+
     engine.start(performance.now());
 
     // ---- pointer input (unified mouse + touch) ----

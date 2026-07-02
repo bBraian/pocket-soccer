@@ -8,6 +8,9 @@ import {
   GOAL_DEPTH,
   GOAL_TOP,
   MAX_DRAG,
+  PENALTY_H,
+  PENALTY_W,
+  POST_R,
 } from './constants';
 import type { Ball, Disc } from './entities';
 
@@ -56,13 +59,17 @@ export function drawField(ctx: CanvasRenderingContext2D, grass: GrassSkin): void
   ctx.fillStyle = p.line;
   ctx.fill();
 
-  // Penalty arcs (semicircles at each goal).
-  ctx.beginPath();
-  ctx.arc(6, FIELD_H / 2, 90, -Math.PI / 2, Math.PI / 2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(FIELD_W - 6, FIELD_H / 2, 90, Math.PI / 2, (Math.PI * 3) / 2);
-  ctx.stroke();
+  // Penalty boxes — rectangles drawn on the pitch at each end.
+  const pbTop = (FIELD_H - PENALTY_H) / 2;
+  ctx.strokeRect(6, pbTop, PENALTY_W, PENALTY_H);
+  ctx.strokeRect(FIELD_W - 6 - PENALTY_W, pbTop, PENALTY_W, PENALTY_H);
+
+  // Smaller goal areas (six-yard boxes).
+  const gaH = GOAL_BOTTOM - GOAL_TOP + 40;
+  const gaTop = (FIELD_H - gaH) / 2;
+  const gaW = 62;
+  ctx.strokeRect(6, gaTop, gaW, gaH);
+  ctx.strokeRect(FIELD_W - 6 - gaW, gaTop, gaW, gaH);
 
   drawGoals(ctx, p.line);
 }
@@ -74,6 +81,26 @@ function drawGoals(ctx: CanvasRenderingContext2D, line: string): void {
   drawNet(ctx, -GOAL_DEPTH, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
   // Right net.
   drawNet(ctx, FIELD_W, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
+  drawPosts(ctx);
+}
+
+// Solid posts at the mouth corners — the ball bounces off these.
+function drawPosts(ctx: CanvasRenderingContext2D): void {
+  const posts: Array<[number, number]> = [
+    [0, GOAL_TOP],
+    [0, GOAL_BOTTOM],
+    [FIELD_W, GOAL_TOP],
+    [FIELD_W, GOAL_BOTTOM],
+  ];
+  for (const [x, y] of posts) {
+    ctx.beginPath();
+    ctx.arc(x, y, POST_R, 0, Math.PI * 2);
+    ctx.fillStyle = '#f4f4f4';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.stroke();
+  }
 }
 
 function drawNet(
@@ -102,54 +129,82 @@ function drawNet(
   ctx.restore();
 }
 
-// Two-tone disc resembling a flag button, with rim + highlight.
+// Button-style disc: shows the team crest inside — the real flag (nations, via
+// a preloaded image) or a generated two-tone badge with initials (clubs).
 export function drawDisc(
   ctx: CanvasRenderingContext2D,
   disc: Disc,
   team: Team,
   alpha: number,
+  crest?: HTMLImageElement | null,
 ): void {
+  const R = DISC_R;
   ctx.save();
   ctx.globalAlpha = alpha;
 
   // Drop shadow.
   ctx.beginPath();
-  ctx.arc(disc.x, disc.y + 3, DISC_R, 0, Math.PI * 2);
+  ctx.arc(disc.x, disc.y + 3, R, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.fill();
 
-  // Clip to disc and paint horizontal bands.
+  // Clip to the disc for the crest fill.
   ctx.save();
   ctx.beginPath();
-  ctx.arc(disc.x, disc.y, DISC_R, 0, Math.PI * 2);
+  ctx.arc(disc.x, disc.y, R, 0, Math.PI * 2);
   ctx.clip();
-  ctx.fillStyle = team.colorPrimary;
-  ctx.fillRect(disc.x - DISC_R, disc.y - DISC_R, DISC_R * 2, DISC_R);
-  ctx.fillStyle = team.colorSecondary;
-  ctx.fillRect(disc.x - DISC_R, disc.y, DISC_R * 2, DISC_R);
-  // Thin center seam.
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillRect(disc.x - DISC_R, disc.y - 1.5, DISC_R * 2, 3);
 
-  // Glossy highlight.
-  const g = ctx.createRadialGradient(
-    disc.x - 8,
-    disc.y - 10,
-    2,
-    disc.x,
-    disc.y,
-    DISC_R,
-  );
-  g.addColorStop(0, 'rgba(255,255,255,0.45)');
-  g.addColorStop(0.5, 'rgba(255,255,255,0.05)');
-  g.addColorStop(1, 'rgba(0,0,0,0.25)');
+  const hasImg = !!crest && crest.complete && crest.naturalWidth > 0;
+  if (hasImg) {
+    // Real flag, filling the disc square.
+    ctx.drawImage(crest as HTMLImageElement, disc.x - R, disc.y - R, R * 2, R * 2);
+  } else if (team.type === 'nation') {
+    // Fallback two-tone while the flag image loads.
+    ctx.fillStyle = team.colorPrimary;
+    ctx.fillRect(disc.x - R, disc.y - R, R * 2, R);
+    ctx.fillStyle = team.colorSecondary;
+    ctx.fillRect(disc.x - R, disc.y, R * 2, R);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillRect(disc.x - R, disc.y - 1.5, R * 2, 3);
+  } else {
+    // Club badge: diagonal two-tone.
+    ctx.fillStyle = team.colorPrimary;
+    ctx.fillRect(disc.x - R, disc.y - R, R * 2, R * 2);
+    ctx.fillStyle = team.colorSecondary;
+    ctx.beginPath();
+    ctx.moveTo(disc.x - R, disc.y - R);
+    ctx.lineTo(disc.x + R, disc.y - R);
+    ctx.lineTo(disc.x - R, disc.y + R);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Glossy highlight over the crest.
+  const g = ctx.createRadialGradient(disc.x - 8, disc.y - 10, 2, disc.x, disc.y, R);
+  g.addColorStop(0, 'rgba(255,255,255,0.4)');
+  g.addColorStop(0.55, 'rgba(255,255,255,0.04)');
+  g.addColorStop(1, 'rgba(0,0,0,0.28)');
   ctx.fillStyle = g;
-  ctx.fillRect(disc.x - DISC_R, disc.y - DISC_R, DISC_R * 2, DISC_R * 2);
-  ctx.restore();
+  ctx.fillRect(disc.x - R, disc.y - R, R * 2, R * 2);
+
+  // Club initials on top.
+  if (!hasImg && team.type === 'club') {
+    const initials = team.badgeInitials ?? team.name.slice(0, 2).toUpperCase();
+    const fs = Math.round(initials.length > 2 ? R * 0.6 : R * 0.85);
+    ctx.font = `800 ${fs}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.strokeText(initials, disc.x, disc.y + 1);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(initials, disc.x, disc.y + 1);
+  }
+  ctx.restore(); // unclip
 
   // Rim.
   ctx.beginPath();
-  ctx.arc(disc.x, disc.y, DISC_R, 0, Math.PI * 2);
+  ctx.arc(disc.x, disc.y, R, 0, Math.PI * 2);
   ctx.lineWidth = 2.5;
   ctx.strokeStyle = 'rgba(0,0,0,0.55)';
   ctx.stroke();
