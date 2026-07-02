@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormationId } from '../types';
-import { FORMATION_LIST, FORMATIONS, randomFormationId } from '../engine/formations';
+import { FORMATION_LIST, FORMATIONS, weightedFormationId } from '../engine/formations';
 import { useNavStore } from '../store/navStore';
 
 function MiniFormation({ id }: { id: FormationId }) {
@@ -22,6 +22,8 @@ function MiniFormation({ id }: { id: FormationId }) {
 export function FormationScreen() {
   const go = useNavStore((s) => s.go);
   const mode = useNavStore((s) => s.mode);
+  const fromTournament = useNavStore((s) => s.fromTournament);
+  const awayTeam = useNavStore((s) => s.awayTeam);
   const setHomeFormation = useNavStore((s) => s.setHomeFormation);
   const setAwayFormation = useNavStore((s) => s.setAwayFormation);
 
@@ -39,8 +41,8 @@ export function FormationScreen() {
     if (pvp) {
       setAwayFormation(awayF);
     } else {
-      // CPU picks a random formation for variety.
-      setAwayFormation(randomFormationId());
+      // CPU formation weighted by opponent strength.
+      setAwayFormation(weightedFormationId(awayTeam?.difficulty ?? 3));
     }
     go('match');
   };
@@ -53,7 +55,10 @@ export function FormationScreen() {
   return (
     <div className="screen formation">
       <header className="screen-header">
-        <button className="back" onClick={() => go('teamSelect')}>
+        <button
+          className="back"
+          onClick={() => go(fromTournament ? 'bracket' : 'teamSelect')}
+        >
           ‹ Voltar
         </button>
         <h2>

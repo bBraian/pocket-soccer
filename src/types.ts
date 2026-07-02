@@ -76,7 +76,6 @@ export interface Tournament {
   size: number; // 4 | 8 | 16 | 32
   teamIds: string[];
   userTeamId: string;
-  userFormation: FormationId;
   rounds: number;
   matches: BracketMatch[];
   currentMatchId: string | null;

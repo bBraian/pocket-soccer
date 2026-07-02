@@ -1,4 +1,4 @@
-import type { BracketMatch, CompetitionId, FormationId, Tournament } from '../types';
+import type { BracketMatch, CompetitionId, Tournament } from '../types';
 import { getTeam } from '../data/teams';
 
 export function shuffle<T>(arr: T[]): T[] {
@@ -22,7 +22,6 @@ export function createTournament(
   size: number,
   drawOrder: string[],
   userTeamId: string,
-  userFormation: FormationId,
 ): Tournament {
   const rounds = roundsForSize(size);
   const matches: BracketMatch[] = [];
@@ -71,7 +70,6 @@ export function createTournament(
     size,
     teamIds: drawOrder,
     userTeamId,
-    userFormation,
     rounds,
     matches,
     currentMatchId: userMatch.id,

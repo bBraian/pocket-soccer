@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import type { CompetitionId, FormationId } from '../types';
+import type { CompetitionId } from '../types';
 import { teamsForCompetition } from '../data/teams';
-import { FORMATION_LIST } from '../engine/formations';
 import { shuffle } from '../tournament/bracket';
 import { useNavStore } from '../store/navStore';
 import { useTournamentStore } from '../store/tournamentStore';
@@ -17,7 +16,6 @@ export function TournamentSetupScreen() {
   const [size, setSize] = useState(8);
   const [userTeamId, setUserTeamId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
-  const [formation, setFormation] = useState<FormationId>('triangle');
 
   const pool = useMemo(() => teamsForCompetition(comp), [comp]);
   const maxSize = Math.min(32, 2 ** Math.floor(Math.log2(pool.length)));
@@ -68,7 +66,7 @@ export function TournamentSetupScreen() {
 
   const create = () => {
     if (!ready || !userTeamId) return;
-    createNew(comp, size, selected, userTeamId, formation);
+    createNew(comp, size, selected, userTeamId);
     go('bracket');
   };
 
@@ -150,18 +148,6 @@ export function TournamentSetupScreen() {
       </div>
 
       <div className="setup-footer">
-        <div className="formation-inline">
-          <span>Formação:</span>
-          {FORMATION_LIST.map((f) => (
-            <button
-              key={f.id}
-              className={`chip ${formation === f.id ? 'active' : ''}`}
-              onClick={() => setFormation(f.id)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
         <button className="menu-btn primary" disabled={!ready} onClick={create}>
           Criar torneio
         </button>

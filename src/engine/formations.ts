@@ -44,11 +44,34 @@ export const FORMATIONS: Record<FormationId, FormationDef> = {
 
 export const FORMATION_LIST = Object.values(FORMATIONS);
 
-// Random formation (used for the CPU opponent). Kept at module scope so it is
-// not treated as an impure call inside React render/handlers.
+// Random formation (uniform). Kept at module scope so it is not treated as an
+// impure call inside React render/handlers.
 export function randomFormationId(): FormationId {
   const ids = FORMATION_LIST.map((f) => f.id);
   return ids[Math.floor(Math.random() * ids.length)];
+}
+
+// Attacking bias of each formation (0 = most defensive .. 3 = most attacking).
+const AGGRO: Record<FormationId, number> = {
+  defensive: 0,
+  triangle: 1,
+  line: 2,
+  offensive: 3,
+};
+
+// CPU formation weighted by team strength: stronger teams lean to attacking
+// shapes, weaker teams to defensive ones. `difficulty` is 1..5.
+export function weightedFormationId(difficulty: number): FormationId {
+  const bias = (difficulty - 3) / 2; // -1 (weak) .. +1 (strong)
+  const ids = FORMATION_LIST.map((f) => f.id);
+  const weights = ids.map((id) => Math.exp(bias * (AGGRO[id] - 1.5)));
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < ids.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return ids[i];
+  }
+  return ids[ids.length - 1];
 }
 
 // Resolve a formation into absolute field pixel positions for a given side.

@@ -1,7 +1,6 @@
 import type { BracketMatch } from '../types';
 import { getTeam } from '../data/teams';
 import { ROUND_NAMES } from '../tournament/bracket';
-import { randomFormationId } from '../engine/formations';
 import { useNavStore } from '../store/navStore';
 import { useTournamentStore } from '../store/tournamentStore';
 import { TeamCrest } from '../components/TeamCrest';
@@ -67,6 +66,35 @@ export function BracketScreen() {
   const champion = championId ? getTeam(championId) : null;
   const current = matches.find((m) => m.id === currentMatchId);
 
+  // Two-sided bracket: the left half of every round marches inward to the
+  // final; the right half mirrors it. Column order (L->R):
+  //   r0-left, r1-left, ..., FINAL, ..., r1-right, r0-right.
+  const finalRound = rounds - 1;
+  const roundMatches = (r: number) =>
+    matches.filter((m) => m.round === r).sort((a, b) => a.slot - b.slot);
+  const columns: Array<{ key: string; label: string; items: BracketMatch[] }> = [];
+  for (let r = 0; r < finalRound; r++) {
+    const ms = roundMatches(r);
+    columns.push({
+      key: `L${r}`,
+      label: ROUND_NAMES(rounds, r),
+      items: ms.slice(0, ms.length / 2),
+    });
+  }
+  columns.push({
+    key: 'F',
+    label: ROUND_NAMES(rounds, finalRound),
+    items: roundMatches(finalRound),
+  });
+  for (let r = finalRound - 1; r >= 0; r--) {
+    const ms = roundMatches(r);
+    columns.push({
+      key: `R${r}`,
+      label: ROUND_NAMES(rounds, r),
+      items: ms.slice(ms.length / 2),
+    });
+  }
+
   const playNext = () => {
     if (!current || !current.homeId || !current.awayId) return;
     const oppId = current.homeId === userTeamId ? current.awayId : current.homeId;
@@ -74,9 +102,7 @@ export function BracketScreen() {
     const opp = getTeam(oppId);
     if (!userTeam || !opp) return;
     nav.setTournamentMatch(userTeam, opp);
-    nav.setHomeFormation(tournament.userFormation);
-    nav.setAwayFormation(randomFormationId());
-    go('match');
+    go('formation');
   };
 
   return (
@@ -126,15 +152,14 @@ export function BracketScreen() {
       )}
 
       <div className="bracket-scroll">
-        {Array.from({ length: rounds }).map((_, r) => (
-          <div className="bround" key={r}>
-            <h4>{ROUND_NAMES(rounds, r)}</h4>
-            {matches
-              .filter((m) => m.round === r)
-              .sort((a, b) => a.slot - b.slot)
-              .map((m) => (
+        {columns.map((col) => (
+          <div className="bround" key={col.key}>
+            <h4>{col.label}</h4>
+            <div className="bround-body">
+              {col.items.map((m) => (
                 <MatchBox key={m.id} m={m} userId={userTeamId} />
               ))}
+            </div>
           </div>
         ))}
       </div>
