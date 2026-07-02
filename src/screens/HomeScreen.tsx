@@ -1,5 +1,6 @@
 import { useNavStore } from '../store/navStore';
 import { useTournamentStore } from '../store/tournamentStore';
+import { fullscreenSupported, toggleFullscreen } from '../fullscreen';
 
 export function HomeScreen() {
   const go = useNavStore((s) => s.go);
@@ -45,7 +46,17 @@ export function HomeScreen() {
         <button className="menu-btn ghost" onClick={() => go('settings')}>
           ⚙ Configurações
         </button>
+        {fullscreenSupported() && (
+          <button className="menu-btn ghost" onClick={toggleFullscreen}>
+            ⛶ Tela cheia
+          </button>
+        )}
       </div>
+
+      <p className="install-hint">
+        Dica: no celular, use “Adicionar à tela inicial” do navegador para abrir
+        como app (tela cheia, sem barra).
+      </p>
     </div>
   );
 }

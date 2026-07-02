@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormationId } from '../types';
 import { FORMATION_LIST, FORMATIONS, weightedFormationId } from '../engine/formations';
 import { useNavStore } from '../store/navStore';
+import { enterFullscreen } from '../fullscreen';
 
 function MiniFormation({ id }: { id: FormationId }) {
   const spots = FORMATIONS[id].spots;
@@ -44,6 +45,7 @@ export function FormationScreen() {
       // CPU formation weighted by opponent strength.
       setAwayFormation(weightedFormationId(awayTeam?.difficulty ?? 3));
     }
+    enterFullscreen(); // immersive match (no-op on iOS/unsupported)
     go('match');
   };
 

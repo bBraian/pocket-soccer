@@ -137,7 +137,7 @@ export function walls(b: Body): void {
 function collidePoint(b: Body, px: number, py: number, pr: number, rest: number): void {
   const dx = b.x - px;
   const dy = b.y - py;
-  let d = Math.hypot(dx, dy);
+  const d = Math.hypot(dx, dy);
   const minD = b.r + pr;
   if (d >= minD) return;
   let nx: number;
@@ -145,7 +145,6 @@ function collidePoint(b: Body, px: number, py: number, pr: number, rest: number)
   if (d === 0) {
     nx = 1;
     ny = 0;
-    d = 0.01;
   } else {
     nx = dx / d;
     ny = dy / d;

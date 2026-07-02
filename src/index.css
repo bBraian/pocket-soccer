@@ -124,6 +124,14 @@ button {
   width: 100%;
   margin: 0 auto;
 }
+.install-hint {
+  max-width: 340px;
+  margin: 4px auto 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
 
 /* ---------- headers ---------- */
 .screen-header {
@@ -409,19 +417,30 @@ button {
 
 /* ---------- match ---------- */
 .match {
-  padding: 0;
+  /* Keep the whole pitch out of the notch / rounded corners (landscape puts
+     the notch on a side, right over a goal). */
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   max-width: none;
   justify-content: center;
   align-items: center;
   overflow: hidden;
   background: #000;
 }
-/* Letterbox the pitch so it always fits BOTH viewport width and height,
-   keeping the 900:560 ratio — key for landscape phones. */
+/* Letterbox the pitch so it always fits BOTH viewport width and height
+   (minus safe-area insets), keeping the 900:560 ratio. */
 .pitch-wrap {
   position: relative;
-  width: min(100%, calc(100dvh * 900 / 560));
-  max-height: 100dvh;
+  width: min(
+    100%,
+    calc(
+      (100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) *
+        900 / 560
+    )
+  );
+  max-height: calc(
+    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
   aspect-ratio: 900 / 560;
   margin: auto;
 }
