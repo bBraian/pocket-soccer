@@ -8,16 +8,30 @@ import {
   GOAL_BOX_DEPTH,
   GOAL_TOP,
   LINEAR_DAMPING,
+  MAX_SPIN,
   POST_R,
+  SPIN_DAMPING,
+  SPIN_FACTOR,
   STOP_SPEED,
   WALL_RESTITUTION,
 } from './constants';
 import type { Ball, Body, Disc } from './entities';
 import { speed } from './entities';
 
-// Integrate one fixed step: damping + position update + rest snapping.
+const isBall = (b: Body): b is Ball => 'spin' in b;
+
+// Add spin to the ball from the tangential (sideways) component of an impact.
+function addSpin(b: Body, tangentialVel: number): void {
+  if (!isBall(b)) return;
+  b.spin += (SPIN_FACTOR * tangentialVel) / b.r;
+  if (b.spin > MAX_SPIN) b.spin = MAX_SPIN;
+  else if (b.spin < -MAX_SPIN) b.spin = -MAX_SPIN;
+}
+
+// Integrate one fixed step: damping + position update + rest snapping + spin.
 export function integrate(bodies: Body[], dt: number): void {
   const decay = Math.max(0, 1 - LINEAR_DAMPING * dt);
+  const spinDecay = Math.max(0, 1 - SPIN_DAMPING * dt);
   for (const b of bodies) {
     b.vx *= decay;
     b.vy *= decay;
@@ -27,6 +41,11 @@ export function integrate(bodies: Body[], dt: number): void {
     }
     b.x += b.vx * dt;
     b.y += b.vy * dt;
+    if (isBall(b)) {
+      b.angle += b.spin * dt;
+      b.spin *= spinDecay;
+      if (Math.abs(b.spin) < 0.02) b.spin = 0;
+    }
   }
 }
 
@@ -71,6 +90,11 @@ function resolvePair(a: Body, b: Body, restitution: number): void {
   a.vy -= iy * invA;
   b.vx += ix * invB;
   b.vy += iy * invB;
+
+  // Off-centre (glancing) hits spin the ball. Tangent t = perpendicular to n.
+  const velT = rvx * -ny + rvy * nx;
+  addSpin(b, velT);
+  addSpin(a, -velT);
 }
 
 export function collide(discs: Disc[], ball: Ball): void {
@@ -92,16 +116,20 @@ export function walls(b: Body): void {
   if (b.y - b.r < 0) {
     b.y = b.r;
     b.vy = Math.abs(b.vy) * WALL_RESTITUTION;
+    addSpin(b, b.vx);
   } else if (b.y + b.r > FIELD_H) {
     b.y = FIELD_H - b.r;
     b.vy = -Math.abs(b.vy) * WALL_RESTITUTION;
+    addSpin(b, -b.vx);
   }
   if (b.x - b.r < 0) {
     b.x = b.r;
     b.vx = Math.abs(b.vx) * WALL_RESTITUTION;
+    addSpin(b, -b.vy);
   } else if (b.x + b.r > FIELD_W) {
     b.x = FIELD_W - b.r;
     b.vx = -Math.abs(b.vx) * WALL_RESTITUTION;
+    addSpin(b, b.vy);
   }
 }
 

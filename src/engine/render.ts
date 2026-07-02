@@ -238,7 +238,21 @@ export function drawBall(
   ctx.fill();
 
   if (img && img.complete && img.naturalWidth > 0) {
-    ctx.drawImage(img, ball.x - R, ball.y - R, R * 2, R * 2);
+    // Clip to a circle (so square PNGs still look round) and spin the texture.
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, R, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.translate(ball.x, ball.y);
+    ctx.rotate(ball.angle);
+    ctx.drawImage(img, -R, -R, R * 2, R * 2);
+    ctx.restore();
+    // Rim.
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, R, 0, Math.PI * 2);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.stroke();
   } else {
     // Fallback plain ball while the skin image loads.
     ctx.beginPath();

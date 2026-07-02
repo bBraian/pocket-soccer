@@ -29,6 +29,12 @@ export const WALL_RESTITUTION = 0.72;
 export const DISC_RESTITUTION = 0.92;
 export const BALL_RESTITUTION = 0.9;
 
+// Ball spin: how strongly a glancing (off-centre) hit sets the ball spinning,
+// and how fast that spin bleeds off.
+export const SPIN_FACTOR = 0.9;
+export const SPIN_DAMPING = 1.1; // per second
+export const MAX_SPIN = 26; // rad/s cap
+
 // Slingshot launch.
 export const MAX_DRAG = 150; // px — beyond this, extra pull adds no force
 export const SHOT_POWER = 11; // drag px -> velocity px/s multiplier

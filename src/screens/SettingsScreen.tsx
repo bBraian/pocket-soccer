@@ -1,4 +1,5 @@
 import type { BallSkin, GrassSkin } from '../types';
+import { ballUrl } from '../data/balls';
 import { useNavStore } from '../store/navStore';
 import { useSettingsStore } from '../store/settingsStore';
 
@@ -54,7 +55,7 @@ export function SettingsScreen() {
               className={`option-card ${ball === b.id ? 'selected' : ''}`}
               onClick={() => setBall(b.id)}
             >
-              <span className={`ball-preview ball-${b.id}`} />
+              <img src={ballUrl(b.id)} alt="" className="ball-preview" />
               {b.label}
             </button>
           ))}

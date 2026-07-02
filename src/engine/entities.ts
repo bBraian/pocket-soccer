@@ -18,6 +18,8 @@ export interface Disc extends Body {
 
 export interface Ball extends Body {
   kind: 'ball';
+  angle: number; // current visual rotation (rad)
+  spin: number; // angular velocity (rad/s)
 }
 
 export const makeDisc = (side: Side, index: number, x: number, y: number): Disc => ({
@@ -40,6 +42,8 @@ export const makeBall = (x: number, y: number): Ball => ({
   vy: 0,
   r: BALL_R,
   mass: BALL_MASS,
+  angle: 0,
+  spin: 0,
 });
 
 export const speed = (b: Body): number => Math.hypot(b.vx, b.vy);
