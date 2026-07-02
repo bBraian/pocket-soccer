@@ -28,7 +28,9 @@ body,
 
 body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background: radial-gradient(120% 120% at 50% 0%, var(--bg-2), var(--bg));
+  /* Pure black behind everything, so the safe-area margins read as absolute
+     black. The content gradient lives on .screen (clipped to its content box). */
+  background: #000;
   color: var(--text);
   overscroll-behavior: none;
 }
@@ -44,15 +46,22 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  /* Landscape puts the notch/rounded corner on a side. env() only reports real
-     insets on a device; in emulators/mockups it's 0, so keep a generous side
-     fallback (32px) that clears the corner either way. */
-  padding: max(16px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right))
+  /* Two-level inset:
+     - transparent BORDER = the black safe-area margin (env on real devices, a
+       generous fallback in emulators where env=0);
+     - PADDING = inner breathing room so content isn't glued to the green edge.
+     The gradient is clipped to padding-box, so it fills padding + content
+     (green) but not the border (black shows through). */
+  border: solid transparent;
+  border-width: max(16px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right))
     max(16px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left));
+  padding: 16px 20px;
   max-width: 760px;
   width: 100%;
   margin: 0 auto;
   overflow-y: auto;
+  background: radial-gradient(120% 120% at 50% 0%, var(--bg-2), var(--bg));
+  background-clip: padding-box;
 }
 
 /* ---------- buttons ---------- */
@@ -419,11 +428,16 @@ button {
 }
 
 /* ---------- match ---------- */
-.match {
-  /* Keep the whole pitch out of the notch / rounded corners (landscape puts
-     the notch on a side, right over a goal). */
-  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right))
-    env(safe-area-inset-bottom, 0px) max(16px, env(safe-area-inset-left));
+/* Higher specificity (.screen.match) so it overrides both the base and the
+   landscape .screen rules. Black safe-area margin via a transparent border,
+   no inner padding (the pitch fills the content box). Sides stay modest so the
+   pitch keeps its width; top/bottom use env only so the letterbox calc below
+   stays exact. */
+.screen.match {
+  border: solid transparent;
+  border-width: env(safe-area-inset-top, 0px) max(24px, env(safe-area-inset-right))
+    env(safe-area-inset-bottom, 0px) max(24px, env(safe-area-inset-left));
+  padding: 0;
   max-width: none;
   justify-content: center;
   align-items: center;
@@ -846,21 +860,15 @@ button {
 /* ---------- landscape phones (short viewport) ---------- */
 @media (orientation: landscape) and (max-height: 560px) {
   .screen {
-    /* Big margin only on the vertical (left/right) edges — that's where the
-       Dynamic Island / notch sits in landscape. It scales with viewport width
-       (clamped 48–80px) and env() takes over on real devices. Top/bottom stay
-       minimal. */
-    padding: max(8px, env(safe-area-inset-top))
-      max(clamp(64px, 10%, 120px), env(safe-area-inset-right))
-      max(8px, env(safe-area-inset-bottom))
-      max(clamp(64px, 10%, 120px), env(safe-area-inset-left));
+    /* Black margin (transparent border) lives on the vertical (left/right)
+       edges — where the Dynamic Island / notch sits in landscape. Scales with
+       viewport width (clamped 64–120px via vw; border-width can't take %), and
+       env() takes over on real devices. Padding = inner green breathing room. */
+    /* No black margin top/bottom — only on the sides (island lives there). */
+    border-width: 0 max(clamp(64px, 10vw, 120px), env(safe-area-inset-right)) 0
+      max(clamp(64px, 10vw, 120px), env(safe-area-inset-left));
+    padding: 10px 18px;
     max-width: 920px;
-  }
-  /* Match keeps 48px sides (clears island over the goal) but no extra top/
-     bottom, so the pitch-wrap letterbox height calc stays correct. */
-  .screen.match {
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .screen-header {
     margin-bottom: 8px;
