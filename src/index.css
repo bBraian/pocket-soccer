@@ -44,8 +44,11 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  /* Landscape puts the notch/rounded corner on a side. env() only reports real
+     insets on a device; in emulators/mockups it's 0, so keep a generous side
+     fallback (32px) that clears the corner either way. */
+  padding: max(16px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left));
   max-width: 760px;
   width: 100%;
   margin: 0 auto;
@@ -419,8 +422,8 @@ button {
 .match {
   /* Keep the whole pitch out of the notch / rounded corners (landscape puts
      the notch on a side, right over a goal). */
-  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
-    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right))
+    env(safe-area-inset-bottom, 0px) max(16px, env(safe-area-inset-left));
   max-width: none;
   justify-content: center;
   align-items: center;
@@ -843,8 +846,17 @@ button {
 /* ---------- landscape phones (short viewport) ---------- */
 @media (orientation: landscape) and (max-height: 560px) {
   .screen {
-    padding: 8px 18px;
+    /* Sides must clear the Dynamic Island / notch (on a side in landscape).
+       env() covers real devices; 64px fallback covers emulators where env=0. */
+    padding: max(8px, env(safe-area-inset-top)) max(64px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom)) max(64px, env(safe-area-inset-left));
     max-width: 920px;
+  }
+  /* Match keeps 48px sides (clears island over the goal) but no extra top/
+     bottom, so the pitch-wrap letterbox height calc stays correct. */
+  .screen.match {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .screen-header {
     margin-bottom: 8px;
