@@ -846,10 +846,14 @@ button {
 /* ---------- landscape phones (short viewport) ---------- */
 @media (orientation: landscape) and (max-height: 560px) {
   .screen {
-    /* Sides must clear the Dynamic Island / notch (on a side in landscape).
-       env() covers real devices; 64px fallback covers emulators where env=0. */
-    padding: max(8px, env(safe-area-inset-top)) max(64px, env(safe-area-inset-right))
-      max(8px, env(safe-area-inset-bottom)) max(64px, env(safe-area-inset-left));
+    /* Big margin only on the vertical (left/right) edges — that's where the
+       Dynamic Island / notch sits in landscape. It scales with viewport width
+       (clamped 48–80px) and env() takes over on real devices. Top/bottom stay
+       minimal. */
+    padding: max(8px, env(safe-area-inset-top))
+      max(clamp(64px, 10%, 120px), env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom))
+      max(clamp(64px, 10%, 120px), env(safe-area-inset-left));
     max-width: 920px;
   }
   /* Match keeps 48px sides (clears island over the goal) but no extra top/
