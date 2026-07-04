@@ -109,6 +109,12 @@ button {
   gap: 28px;
   text-align: center;
 }
+.home-logo-img {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.55));
+}
 .home-logo h1 {
   margin: 8px 0 2px;
   font-size: 34px;
@@ -775,19 +781,20 @@ button {
   flex: 1;
   min-height: 0;
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  /* 'safe center' centers the tree but never clips the top/left when it
+     overflows (tall 16/32-team brackets on a short screen). */
+  align-items: safe center;
+  justify-content: safe center;
+  gap: 12px;
   overflow: auto;
-  padding-bottom: 10px;
+  padding: 4px 0 10px;
 }
+/* Flags-only bracket: narrow columns, no names, no round headers. */
 .bround {
-  min-width: 148px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-.bround h4 {
-  text-align: center;
 }
 /* Fixed column height (set inline from the first round). Each match lives in an
    equal-height cell; a round with half the matches gets cells twice as tall, so
@@ -809,18 +816,10 @@ button {
 }
 .bmatch {
   flex: none;
-}
-.bround h4 {
-  margin: 0 0 4px;
-  color: var(--muted);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.bmatch {
+  min-width: 50px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 9px;
   overflow: hidden;
 }
 .bmatch.usermatch {
@@ -829,28 +828,30 @@ button {
 .bslot {
   display: flex;
   align-items: center;
+  justify-content: center; /* flag centered when there's no score yet */
   gap: 6px;
-  padding: 6px 8px;
+  padding: 4px 6px;
   font-size: 12px;
+}
+/* Once a score is present, split flag (left) and score (right). */
+.bslot:has(.bscore) {
+  justify-content: space-between;
 }
 .bslot + .bslot {
   border-top: 1px solid var(--line);
 }
 .bslot.win {
   background: rgba(86, 193, 90, 0.14);
-  font-weight: 700;
 }
-.bslot.user .bname {
-  color: var(--accent);
+.bslot.user {
+  box-shadow: inset 3px 0 0 var(--accent);
 }
-.bname {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.bname.tbd {
-  color: var(--muted);
+.bslot-tbd {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px dashed var(--line);
 }
 .bscore {
   font-variant-numeric: tabular-nums;
@@ -884,9 +885,9 @@ button {
   .home-logo h1 {
     font-size: 26px;
   }
-  .ball-dot {
-    width: 34px;
-    height: 34px;
+  .home-logo-img {
+    width: 160px;
+    height: 160px;
   }
   .home-menu {
     gap: 9px;

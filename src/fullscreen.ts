@@ -11,12 +11,6 @@ type FsDoc = Document & {
   webkitExitFullscreen?: () => Promise<void> | void;
 };
 
-export function fullscreenSupported(): boolean {
-  if (typeof document === 'undefined') return false;
-  const el = document.documentElement as FsEl;
-  return Boolean(el.requestFullscreen || el.webkitRequestFullscreen);
-}
-
 export function isFullscreen(): boolean {
   const d = document as FsDoc;
   return Boolean(d.fullscreenElement || d.webkitFullscreenElement);

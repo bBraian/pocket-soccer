@@ -21,14 +21,11 @@ function Slot({
   return (
     <div className={`bslot ${isWinner ? 'win' : ''} ${isUser ? 'user' : ''}`}>
       {team ? (
-        <>
-          <TeamCrest team={team} size={18} />
-          <span className="bname">{team.name}</span>
-        </>
+        <TeamCrest team={team} size={22} />
       ) : (
-        <span className="bname tbd">—</span>
+        <span className="bslot-tbd" />
       )}
-      <span className="bscore">{score ?? ''}</span>
+      {score != null && <span className="bscore">{score}</span>}
     </div>
   );
 }
@@ -162,15 +159,18 @@ export function BracketScreen() {
       <div className="bracket-scroll">
         {columns.map((col) => (
           <div className="bround" key={col.key}>
-            <h4>{col.label}</h4>
-            <div className="bround-body" style={{ minHeight: colMinHeight }}>
+            <div className="bround-body" style={{ height: colMinHeight }}>
               {col.items.map((m) => (
                 // Each match sits in an equal-height cell; a round with half the
                 // matches gets cells twice as tall, so its match centers exactly
                 // between the two it feeds from.
                 <div className="bcell" key={m.id}>
                   {col.key === 'F' && (
-                    <img src={trophyImg} className="trophy-img sm final-trophy" alt="" />
+                    <img
+                      src={trophyImg}
+                      className="trophy-img sm final-trophy"
+                      alt=""
+                    />
                   )}
                   <MatchBox m={m} userId={userTeamId} />
                 </div>
