@@ -11,9 +11,9 @@ const GRASS: Array<{ id: GrassSkin; label: string; swatch: string }> = [
 ];
 
 const BALLS: Array<{ id: BallSkin; label: string }> = [
-  { id: 'classic', label: 'Clássica' },
-  { id: 'striped', label: 'Listrada' },
-  { id: 'star', label: 'Estrela' },
+  { id: 'classic', label: 'Trionda' },
+  { id: 'striped', label: 'Champions' },
+  { id: 'star', label: 'Brazuca' },
   { id: 'retro', label: 'Retrô' },
 ];
 
